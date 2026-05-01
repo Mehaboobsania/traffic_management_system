@@ -1,0 +1,172 @@
+SQL Queries
+
+1. Create Tables:
+CREATE TABLE traffic_zones (
+zone_id NUMBER PRIMARY KEY,
+zone_type VARCHAR2(50),
+location VARCHAR2(100)
+);
+
+CREATE TABLE traffic_monitoring (
+zone_id NUMBER,
+occurred DATE,
+PRIMARY KEY (zone_id, occurred),
+FOREIGN KEY (zone_id) REFERENCES traffic_zones(zone_id)
+);
+
+CREATE TABLE traffic_signals (
+signal_id NUMBER PRIMARY KEY,
+zone_id NUMBER,
+type VARCHAR2(50),
+FOREIGN KEY (zone_id) REFERENCES traffic_zones(zone_id)
+);
+CREATE TABLE drivers (
+driver_id NUMBER PRIMARY KEY,
+driver_name VARCHAR2(100),
+contact_info VARCHAR2(100)
+);
+
+CREATE TABLE vehicles (
+vehicle_id NUMBER PRIMARY KEY,
+owner_id NUMBER,
+contact_info VARCHAR2(100),
+license_issued_date DATE,
+FOREIGN KEY (owner_id) REFERENCES drivers(driver_id)
+);
+
+CREATE TABLE accident (
+accident_id NUMBER PRIMARY KEY,
+location NUMBER,
+date DATE,
+description VARCHAR2(200),
+severity VARCHAR2(20),
+zone_id NUMBER,
+FOREIGN KEY (zone_id) REFERENCES traffic_zones(zone_id)
+);
+
+
+2.Insert into TRAFFIC_ZONES:
+INSERT INTO traffic_zones VALUES (101, 'School Zone', 'Maple Street’);
+INSERT INTO traffic_zones VALUES (102, 'Junction', 'Central Square');
+INSERT INTO traffic_zones VALUES (103, 'Expressway', 'National Highway 44');
+INSERT INTO traffic_zones VALUES (104, 'Commercial Area', 'Tech Park Road');
+INSERT INTO traffic_zones VALUES (105, 'Residential Zone', 'Oakwood Drive');
+
+3.Insert into TRAFFIC_MONITORING:
+INSERT INTO traffic_monitoring VALUES (101, TO_DATE('2025-07-08 07:45', 'YYYY-MM-DD HH24:MI'));
+INSERT INTO traffic_monitoring VALUES (102, TO_DATE('2025-07-08 08:30', 'YYYY-MM-DD HH24:MI'));
+INSERT INTO traffic_monitoring VALUES (103, TO_DATE('2025-07-08 09:00', 'YYYY-MM-DD HH24:MI'));
+INSERT INTO traffic_monitoring VALUES (104, TO_DATE('2025-07-08 09:30', 'YYYY-MM-DD HH24:MI'));
+INSERT INTO traffic_monitoring VALUES (105, TO_DATE('2025-07-08 10:00', 'YYYY-MM-DD HH24:MI'));
+
+4.Insert into TRAFFIC_SIGNALS:
+INSERT INTO traffic_signals VALUES (201, 101, 'Pedestrian Crossing');
+INSERT INTO traffic_signals VALUES (202, 102, 'Red Light');
+INSERT INTO traffic_signals VALUES (203, 103, 'Sensor-Based');
+INSERT INTO traffic_signals VALUES (204, 104, 'Smart LED Signal');
+INSERT INTO traffic_signals VALUES (205, 105, 'Roundabout Stop');
+
+5.Insert into DRIVERS:
+INSERT INTO drivers VALUES (301, 'Aman Verma', 'aman@example.com');
+INSERT INTO drivers VALUES (302, 'Priya Nair', 'priya@example.com');
+INSERT INTO drivers VALUES (303, 'Ravi Singh', 'ravi@example.com');
+INSERT INTO drivers VALUES (304, 'Sneha Das', 'sneha@example.com');
+INSERT INTO drivers VALUES (305, 'Karthik Rao', 'karthik@example.com');
+
+6.Insert into VEHICLES:
+INSERT INTO vehicles VALUES (401, 301, 'aman.car@example.com', TO_DATE('2021-04-15', 'YYYY-MM-DD'));
+INSERT INTO vehicles VALUES (402, 302, 'priya.car@example.com', TO_DATE('2022-07-10', 'YYYY-MM-DD'));
+INSERT INTO vehicles VALUES (403, 303, 'ravi.car@example.com', TO_DATE('2020-11-22', 'YYYY-MM-DD'));
+INSERT INTO vehicles VALUES (404, 304, 'sneha.car@example.com', TO_DATE('2019-05-09', 'YYYY-MM-DD'));
+INSERT INTO vehicles VALUES (405, 305, 'karthik.car@example.com', TO_DATE('2023-01-01', 'YYYY-MM-DD'));
+
+7.Insert into ACCIDENT:
+INSERT INTO accident
+VALUES (107, 329, TO_DATE('2025-07-08', 'YYYY-MM-DD'), 'Motorbike slipped on oil spill', 'Medium', 101);
+INSERT INTO accident
+VALUES (108, 333, TO_DATE('2025-07-06', 'YYYY-MM-DD'), 'Rear-end collision during rush hour', 'Low', 102);
+INSERT INTO accident
+VALUES (109, 337, TO_DATE('2025-07-05', 'YYYY-MM-DD'), 'Vehicle fire due to engine failure', 'High', 103);
+INSERT INTO accident
+VALUES (110, 342, TO_DATE('2025-07-04', 'YYYY-MM-DD'), 'Car hit divider during fog', 'Medium',104);
+INSERT INTO accident
+VALUES (111, 346, TO_DATE('2025-07-02', 'YYYY-MM-DD'), 'Minor accident near school zone', 'Low', 105);
+8. Create accident_details:
+CREATE VIEW accident_details AS
+SELECT
+tz.zone_id,
+tz.zone_type
+a.accident_id,
+a.severity,
+tm.occurred AS monitoring_time,
+ts.type AS signal_type,
+d.driver_name
+FROM
+traffic_zones tz
+LEFT JOIN traffic_monitoring tm ON tz.zone_id = tm.zone_id
+LEFT JOIN traffic_signals ts ON tz.zone_id = ts.zone_id
+LEFT JOIN accident a ON tz.zone_id = a.zone_id
+LEFT JOIN vehicle v ON v.owner_id IS NOT NULL
+LEFT JOIN drivers d ON v.owner_id = d.driver_id;
+
+9.EXAMPLE QUERIES:
+--view all traffic_zones
+SELECT * FROM traffic_zones;
+
+--view all traffic_monitoring
+SELECT * FROM traffic_monitoring;
+
+--view all traffic_signals
+SELECT * FROM traffic_signals;
+
+--view all vehicles
+SELECT * FROM vehicles;
+
+--view all deivers
+SELECT * FROM drivers;
+
+--view all accident
+SELECT * FROM accident;
+
+-- Show all traffic zones in a specific area
+SELECT * FROM traffic_zones WHERE location LIKE '%Tech Park%';
+
+-- List school zones
+SELECT zone_id, location FROM traffic_zones WHERE zone_type = 'School Zone';
+
+-- List all monitoring records after 9 AM
+SELECT * FROM traffic_monitoring WHERE occurred > TO_DATE('2025-07-08 09:00:00', 'YYYY-MM-DD HH24:MI:SS');
+
+-- Count how many times each zone has been monitored
+SELECT zone_id, COUNT(*) AS monitor_count FROM traffic_monitoring GROUP BY zone_id;
+
+-- Find signal types installed in school zones
+SELECT ts.signal_id, ts.type
+FROM traffic_signals ts
+JOIN traffic_zones tz ON ts.zone_id = tz.zone_id
+WHERE tz.zone_type = 'School Zone';
+
+-- Count signals by type
+SELECT type, COUNT(*) AS total FROM traffic_signals GROUP BY type;
+
+-- Get all vehicles issued a license before 2022
+SELECT vehicle_id, license_issued_date FROM vehicles WHERE license_issued_date < TO_DATE('2022-01-01', 'YYYY-MM-DD');
+
+-- Retrieve vehicle and owner email info
+SELECT vehicle_id, contact_info FROM vehicles;
+
+-- Find all drivers with Gmail accounts
+SELECT driver_name FROM drivers WHERE contact_info LIKE '%@gmail.com';
+
+-- List driver names and license issue dates
+SELECT driver_name, license_issued_date FROM drivers;
+
+-- List major or fatal accidents after July 6, 2025
+SELECT accident_id, severity, date FROM accident
+WHERE severity IN ('Major', 'Fatal')
+AND date > TO_DATE('2025-07-06', 'YYYY-MM-DD');
+-- Show all accidents in junction zones
+SELECT a.accident_id, a.description
+FROM accident a
+JOIN traffic_zones tz ON a.zone_id = tz.zone_id
+WHERE tz.zone_type = 'Junction';
